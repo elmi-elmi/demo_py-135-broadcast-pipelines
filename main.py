@@ -41,8 +41,8 @@ def data_parser():
 
 def coroutine(fn):
     def inner(*args, **kwargs):
-        gen = fn(*arg, **kwargs)
-        nex(gen)
+        gen = fn(*args, **kwargs)
+        next(gen)
         return gen
     return inner
 
@@ -56,5 +56,42 @@ def save_data(f_name, headers):
             data_row = yield
             writer.writerow(data_row)
 
+@coroutine
+def filter_data(filter_predicate, target):
+    while True:
+        data_row = yield
+        if filter_predicate(data_row):
+            target.send(data_row)
+
+@coroutine 
+def broadcast(targets):
+    while True:
+        data_row = yield
+        for target in targets:
+            target.send(data_row)
+
+def process_data():
+    out_pink_cars = save_data('pink_cars.csv', headers)
+    out_ford_green = save_data('ford_green.csv', headers)
+    out_older = save_data('older.csv', headers)
+
+    filter_pink_cars = filter_data(lambda d: d[idx_color].lower() == 'pink',out_pink_cars)
+    
+    def pred_ford_green(d):
+        return(d[idx_model].lower()=='ford' and d[idx_color].lower() == 'green')
+
+    filter_ford_green = filter_data(pred_ford_green, out_ford_green)
+
+    filter_old = filter_data(lambda d: d[idx_year] <= 2010, out_older)
+
+    filters = (filter_pink_cars, filter_ford_green, filter_old)
+
+    broadcaster = broadcast(filters)
+
+    for row in data_parser():
+        broadcaster.send(row)
+    
+    print('Finished processing MARD.')
 
 
+process_data()
