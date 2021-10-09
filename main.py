@@ -35,7 +35,26 @@ def data_parser():
         parsed_data = [converter(item) for converter, item in zip(converters, row)]
         yield parsed_data
 
-data = data_parser()
-for _ in range(5):
-    print(next(data))
+# data = data_parser()
+# for _ in range(5):
+#     print(next(data))
+
+def coroutine(fn):
+    def inner(*args, **kwargs):
+        gen = fn(*arg, **kwargs)
+        nex(gen)
+        return gen
+    return inner
+
+
+@coroutine
+def save_data(f_name, headers):
+    with open(f_name, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+        while True:
+            data_row = yield
+            writer.writerow(data_row)
+
+
 
